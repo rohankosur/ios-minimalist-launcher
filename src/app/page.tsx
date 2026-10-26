@@ -5,54 +5,57 @@ import PWAClientManager from "@/components/PWAClientManager";
 import CustomizeModal from "@/components/CustomizeModal";
 import MindfulDelayModal from "@/components/MindfulDelayModal";
 import AppSearchDrawer from "@/components/AppSearchDrawer";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { LauncherProvider } from "@/context/LauncherContext";
 
 export default function Home() {
   return (
-    <LauncherProvider>
-      <main className="relative h-[100dvh] w-full overflow-hidden bg-[#050f2d] flex flex-col items-center justify-between">
-        {/* Layer 0: Deep space celestial nebula & void base */}
-        <div 
-          className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_90%_90%_at_50%_0%,#091b42_0%,#050f2d_45%,#02040b_100%)]" 
-        />
-        <div 
-          className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_70%_50%_at_80%_30%,rgba(60,30,110,0.22)_0%,transparent_60%)]" 
-        />
-        <div 
-          className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_20%_80%,rgba(15,40,90,0.3)_0%,transparent_50%)]" 
-        />
+    <ErrorBoundary>
+      <LauncherProvider>
+        <main className="fixed inset-0 w-full h-full overflow-hidden bg-[#050f2d] flex flex-col items-center justify-between">
+          {/* Layer 0: Deep space celestial nebula & void base */}
+          <div 
+            className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_90%_90%_at_50%_0%,#091b42_0%,#050f2d_45%,#02040b_100%)]" 
+          />
+          <div 
+            className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_70%_50%_at_80%_30%,rgba(60,30,110,0.22)_0%,transparent_60%)]" 
+          />
+          <div 
+            className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_20%_80%,rgba(15,40,90,0.3)_0%,transparent_50%)]" 
+          />
 
-        {/* Layer 1: Starry space wallpaper canvas */}
-        <div className="fixed inset-0 z-[1] pointer-events-none">
-          <Starfield />
-        </div>
-
-        {/* 
-          Layer 10: Main ergonomic viewport frame
-          Anchored to modern thumb mechanics on mobile screens
-        */}
-        <div className="relative z-10 w-full max-w-md h-full flex flex-col justify-between overflow-hidden">
-          {/* Upper Half: Top-Mounted Customizable Widgets */}
-          <div className="w-full flex-1 flex flex-col justify-center">
-            <TopWidgets />
+          {/* Layer 1: Starry space wallpaper canvas */}
+          <div className="fixed inset-0 z-[1] pointer-events-none">
+            <Starfield />
           </div>
 
-          {/* Lower Half: Anchored down the Y-axis directly into thumb reach */}
-          <div className="w-full flex flex-col justify-end pb-safe">
-            <PWAClientManager />
-            <LauncherNav />
+          {/* 
+            Layer 10: Main ergonomic viewport frame
+            Anchored to modern thumb mechanics on mobile screens
+          */}
+          <div className="relative z-10 w-full max-w-md h-full flex flex-col justify-between overflow-hidden">
+            {/* Upper Half: Top-Mounted Customizable Widgets */}
+            <div className="w-full flex-1 flex flex-col justify-center">
+              <TopWidgets />
+            </div>
+
+            {/* Lower Half: Anchored down the Y-axis directly into thumb reach */}
+            <div className="w-full flex flex-col justify-end pb-safe">
+              <PWAClientManager />
+              <LauncherNav />
+            </div>
           </div>
-        </div>
 
-        {/* Dumb Phone Mindful Friction Delay Modal (Blank Spaces / Minimalist Phone) */}
-        <MindfulDelayModal />
+          {/* Dumb Phone Mindful Friction Delay Modal */}
+          <MindfulDelayModal />
 
-        {/* A-Z Intentional App Search Drawer (Olauncher / Niagara) */}
-        <AppSearchDrawer />
+          {/* A-Z Intentional App Search Drawer */}
+          <AppSearchDrawer />
 
-        {/* Bespoke App & Widget Customizer Sheet Modal */}
-        <CustomizeModal />
-      </main>
-    </LauncherProvider>
+          {/* Bespoke App & Widget Customizer Sheet Modal */}
+          <CustomizeModal />
+        </main>
+      </LauncherProvider>
+    </ErrorBoundary>
   );
 }
