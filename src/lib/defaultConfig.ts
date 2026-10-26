@@ -1,4 +1,14 @@
-import { AppWidgetItem, PresetScheme } from "@/types/launcher";
+import { AppWidgetItem, PresetScheme, DumbPhoneSettings } from "@/types/launcher";
+
+export const DEFAULT_DUMBPHONE_SETTINGS: DumbPhoneSettings = {
+  activeMode: "all",
+  textAlignment: "left",
+  globalMindfulDelay: false,
+  mindfulDelaySeconds: 4,
+  dailyOpensCount: 0,
+  lastOpensDate: new Date().toISOString().split("T")[0],
+  detoxStreakDays: 3,
+};
 
 export const DEFAULT_APPS: AppWidgetItem[] = [
   {
@@ -8,6 +18,8 @@ export const DEFAULT_APPS: AppWidgetItem[] = [
     description: "iOS CoreTelephony Dialer",
     category: "telecom",
     enabled: true,
+    mindfulDelay: false,
+    modes: ["essential", "personal", "all"],
     widget: {
       type: "contact",
       title: "speed contact",
@@ -23,6 +35,8 @@ export const DEFAULT_APPS: AppWidgetItem[] = [
     description: "iOS MobileSMS Service",
     category: "chat",
     enabled: true,
+    mindfulDelay: false,
+    modes: ["essential", "personal", "all"],
     widget: {
       type: "sms_quick",
       title: "quick dispatch",
@@ -38,6 +52,8 @@ export const DEFAULT_APPS: AppWidgetItem[] = [
     description: "Apple MobileNotes Application",
     category: "workspace",
     enabled: true,
+    mindfulDelay: false,
+    modes: ["essential", "focus", "all"],
     widget: {
       type: "scratchpad",
       title: "quick scratchpad",
@@ -53,6 +69,8 @@ export const DEFAULT_APPS: AppWidgetItem[] = [
     description: "Spotify Audio Streamer",
     category: "audio",
     enabled: true,
+    mindfulDelay: false,
+    modes: ["personal", "all"],
     widget: {
       type: "now_playing",
       title: "now playing",
@@ -68,6 +86,8 @@ export const DEFAULT_APPS: AppWidgetItem[] = [
     description: "Google Maps Navigation Engine",
     category: "spatial",
     enabled: true,
+    mindfulDelay: false,
+    modes: ["essential", "personal", "all"],
     widget: {
       type: "directions",
       title: "commute beacon",
@@ -83,6 +103,8 @@ export const DEFAULT_APPS: AppWidgetItem[] = [
     description: "iOS Preferences Root Daemon",
     category: "system",
     enabled: true,
+    mindfulDelay: false,
+    modes: ["essential", "focus", "personal", "all"],
     widget: {
       type: "telemetry",
       title: "system telemetry",

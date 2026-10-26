@@ -1,12 +1,12 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { AppWidgetItem, WidgetType } from "@/types/launcher";
-import { DEFAULT_APPS } from "@/lib/defaultConfig";
+import { AppWidgetItem, WidgetType, FocusMode, TextAlignment, DumbPhoneSettings } from "@/types/launcher";
+import { DEFAULT_APPS, DEFAULT_DUMBPHONE_SETTINGS } from "@/lib/defaultConfig";
 
 interface LauncherContextType {
   apps: AppWidgetItem[];
-  activeWidgetId: string; // "clock" or any app.id
+  activeWidgetId: string;
   setActiveWidgetId: (id: string) => void;
   updateApp: (id: string, updated: Partial<AppWidgetItem>) => void;
   updateAppWidget: (
@@ -19,9 +19,21 @@ interface LauncherContextType {
   resetDefaults: () => void;
   isCustomizing: boolean;
   setIsCustomizing: (value: boolean) => void;
+  
+  // Dumbphone Behavioral Engineering Features
+  settings: DumbPhoneSettings;
+  setFocusMode: (mode: FocusMode) => void;
+  setTextAlignment: (align: TextAlignment) => void;
+  updateSettings: (newSettings: Partial<DumbPhoneSettings>) => void;
+  recordAppOpen: () => void;
+  pendingMindfulApp: AppWidgetItem | null;
+  setPendingMindfulApp: (app: AppWidgetItem | null) => void;
+  isSearchOpen: boolean;
+  setIsSearchOpen: (val: boolean) => void;
 }
 
-const STORAGE_KEY = "ios_launcher_apps_v2";
+const STORAGE_KEY = "ios_launcher_apps_v3";
+const SETTINGS_KEY = "ios_launcher_settings_v3";
 
 const LauncherContext = createContext<LauncherContextType | undefined>(undefined);
 
@@ -29,19 +41,26 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
   const [apps, setApps] = useState<AppWidgetItem[]>(DEFAULT_APPS);
   const [activeWidgetId, setActiveWidgetId] = useState<string>("clock");
   const [isCustomizing, setIsCustomizing] = useState<boolean>(false);
+  const [settings, setSettings] = useState<DumbPhoneSettings>(DEFAULT_DUMBPHONE_SETTINGS);
+  const [pendingMindfulApp, setPendingMindfulApp] = useState<AppWidgetItem | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
 
   // Load from localStorage on client mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const savedApps = localStorage.getItem(STORAGE_KEY);
+      if (savedApps) {
+        const parsed = JSON.parse(savedApps);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setApps(parsed);
         }
       }
-      const savedWidgetId = localStorage.getItem("ios_launcher_active_widget_v2");
+      const savedSettings = localStorage.getItem(SETTINGS_KEY);
+      if (savedSettings) {
+        setSettings((prev) => ({ ...prev, ...JSON.parse(savedSettings) }));
+      }
+      const savedWidgetId = localStorage.getItem("ios_launcher_active_widget_v3");
       if (savedWidgetId) {
         setActiveWidgetId(savedWidgetId);
       }
@@ -51,21 +70,31 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Save to localStorage whenever apps change
+  // Save apps whenever they change
   useEffect(() => {
     if (!mounted) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
     } catch (e) {
-      console.warn("Failed to save launcher configuration to localStorage:", e);
+      console.warn("Failed to save apps:", e);
     }
   }, [apps, mounted]);
 
-  // Save active widget selection
+  // Save settings whenever they change
   useEffect(() => {
     if (!mounted) return;
     try {
-      localStorage.setItem("ios_launcher_active_widget_v2", activeWidgetId);
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    } catch (e) {
+      console.warn("Failed to save settings:", e);
+    }
+  }, [settings, mounted]);
+
+  // Save active widget
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      localStorage.setItem("ios_launcher_active_widget_v3", activeWidgetId);
     } catch (e) {
       console.warn("Failed to save active widget id:", e);
     }
@@ -117,11 +146,38 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
 
   const resetDefaults = () => {
     setApps(DEFAULT_APPS);
+    setSettings(DEFAULT_DUMBPHONE_SETTINGS);
     setActiveWidgetId("clock");
     try {
       localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem("ios_launcher_active_widget_v2");
+      localStorage.removeItem(SETTINGS_KEY);
+      localStorage.removeItem("ios_launcher_active_widget_v3");
     } catch {}
+  };
+
+  const setFocusMode = (mode: FocusMode) => {
+    setSettings((prev) => ({ ...prev, activeMode: mode }));
+  };
+
+  const setTextAlignment = (align: TextAlignment) => {
+    setSettings((prev) => ({ ...prev, textAlignment: align }));
+  };
+
+  const updateSettings = (newSettings: Partial<DumbPhoneSettings>) => {
+    setSettings((prev) => ({ ...prev, ...newSettings }));
+  };
+
+  const recordAppOpen = () => {
+    const today = new Date().toISOString().split("T")[0];
+    setSettings((prev) => {
+      const isNewDay = prev.lastOpensDate !== today;
+      const count = isNewDay ? 1 : prev.dailyOpensCount + 1;
+      return {
+        ...prev,
+        dailyOpensCount: count,
+        lastOpensDate: today,
+      };
+    });
   };
 
   return (
@@ -138,6 +194,15 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
         resetDefaults,
         isCustomizing,
         setIsCustomizing,
+        settings,
+        setFocusMode,
+        setTextAlignment,
+        updateSettings,
+        recordAppOpen,
+        pendingMindfulApp,
+        setPendingMindfulApp,
+        isSearchOpen,
+        setIsSearchOpen,
       }}
     >
       {children}

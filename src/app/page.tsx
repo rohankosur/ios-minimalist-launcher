@@ -3,6 +3,8 @@ import TopWidgets from "@/components/TopWidgets";
 import LauncherNav from "@/components/LauncherNav";
 import PWAClientManager from "@/components/PWAClientManager";
 import CustomizeModal from "@/components/CustomizeModal";
+import MindfulDelayModal from "@/components/MindfulDelayModal";
+import AppSearchDrawer from "@/components/AppSearchDrawer";
 import { LauncherProvider } from "@/context/LauncherContext";
 
 export default function Home() {
@@ -30,7 +32,7 @@ export default function Home() {
           Anchored to modern thumb mechanics on mobile screens
         */}
         <div className="relative z-10 w-full max-w-md h-full flex flex-col justify-between overflow-hidden">
-          {/* Upper Half: Top-Mounted Customizable Widgets (Clock, Notes, Speed Dial, Media, Maps) */}
+          {/* Upper Half: Top-Mounted Customizable Widgets */}
           <div className="w-full flex-1 flex flex-col justify-center">
             <TopWidgets />
           </div>
@@ -41,6 +43,12 @@ export default function Home() {
             <LauncherNav />
           </div>
         </div>
+
+        {/* Dumb Phone Mindful Friction Delay Modal (Blank Spaces / Minimalist Phone) */}
+        <MindfulDelayModal />
+
+        {/* A-Z Intentional App Search Drawer (Olauncher / Niagara) */}
+        <AppSearchDrawer />
 
         {/* Bespoke App & Widget Customizer Sheet Modal */}
         <CustomizeModal />
