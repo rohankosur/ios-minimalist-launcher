@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLauncher } from "@/context/LauncherContext";
 import { PRESET_LIBRARY } from "@/lib/defaultConfig";
 import { WidgetType, PresetScheme, FocusMode, TextAlignment } from "@/types/launcher";
@@ -40,6 +40,18 @@ export default function CustomizeModal() {
   const [customLabel, setCustomLabel] = useState<string>("");
   const [customScheme, setCustomScheme] = useState<string>("");
   const [customWidgetType, setCustomWidgetType] = useState<WidgetType>("telemetry");
+
+  // Keyboard Escape listener
+  useEffect(() => {
+    if (!isCustomizing) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsCustomizing(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isCustomizing, setIsCustomizing]);
 
   if (!isCustomizing) return null;
 
@@ -100,14 +112,16 @@ export default function CustomizeModal() {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200"
+      onClick={() => setIsCustomizing(false)}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200 select-none cursor-pointer"
     >
       <div
-        className="w-full max-w-lg max-h-[90vh] rounded-t-[36px] sm:rounded-[36px] flex flex-col overflow-hidden text-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg max-h-[90vh] rounded-t-[36px] sm:rounded-[36px] flex flex-col overflow-hidden text-white shadow-2xl cursor-default"
         style={{
-          backgroundColor: "rgba(5, 15, 45, 0.92)",
-          backdropFilter: "blur(28px)",
-          WebkitBackdropFilter: "blur(28px)",
+          backgroundColor: "rgba(5, 15, 45, 0.94)",
+          backdropFilter: "blur(30px)",
+          WebkitBackdropFilter: "blur(30px)",
           border: "none",
         }}
       >
@@ -124,7 +138,7 @@ export default function CustomizeModal() {
           <button
             type="button"
             onClick={() => setIsCustomizing(false)}
-            className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-xs font-bold lowercase transition-all"
+            className="px-4 py-1.5 rounded-full bg-white text-[#050f2d] hover:bg-white/90 active:scale-95 text-xs font-bold lowercase transition-all"
           >
             done
           </button>
@@ -165,7 +179,7 @@ export default function CustomizeModal() {
               {/* Global Mindful Pause (from Minimalist Phone / Blank Spaces) */}
               <div>
                 <label className="text-[11px] text-white/50 block mb-1 lowercase">
-                  mindful breathing pause
+                  mindful pause
                 </label>
                 <button
                   type="button"
@@ -176,7 +190,7 @@ export default function CustomizeModal() {
                   }
                   className={`w-full py-1.5 px-2 rounded-lg text-xs font-mono lowercase transition-all ${
                     settings.globalMindfulDelay
-                      ? "bg-emerald-400/20 text-emerald-300 border border-emerald-400/30"
+                      ? "bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 font-bold"
                       : "bg-white/10 text-white/60 hover:text-white"
                   }`}
                 >
@@ -277,7 +291,7 @@ export default function CustomizeModal() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-[#050f2d] font-bold text-xs lowercase transition-all"
+                  className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-[#050f2d] font-bold text-xs lowercase transition-all"
                 >
                   add custom app
                 </button>
@@ -386,7 +400,7 @@ export default function CustomizeModal() {
                   </button>
                 </div>
 
-                {/* Focus Modes Assignment (from Dumb Phone by Michael Tigas) */}
+                {/* Focus Modes Assignment */}
                 <div className="pt-2 border-t border-white/5">
                   <label className="text-[11px] text-white/50 block mb-1.5 lowercase">
                     active in focus modes:

@@ -34,6 +34,7 @@ export default function Starfield() {
     if (!ctx) return;
 
     let animationFrameId: number;
+    let isPaused = false;
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
@@ -42,42 +43,34 @@ export default function Starfield() {
     canvas.height = height * dpr;
     ctx.scale(dpr, dpr);
 
-    const handleResize = () => {
-      if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      ctx.scale(dpr, dpr);
-      initStars();
-    };
-
-    window.addEventListener("resize", handleResize);
-
     const starPalettes = [
       "#ffffff",
       "#ffffff",
-      "#f0f9ff",
-      "#e0f2fe",
-      "#93c5fd",
-      "#c7d2fe",
-      "#fef08a",
+      "#f8fafc",
+      "#e0f2fe", // Ice blue
+      "#93c5fd", // Stellar blue
+      "#c7d2fe", // Celestial indigo
+      "#fef08a", // Soft golden dwarf
     ];
 
     let stars: Star[] = [];
-    const starCount = Math.floor((width * height) / 1600); // Dense starry night
+    const starCount = Math.floor((width * height) / 1800);
 
     const initStars = () => {
       stars = [];
       for (let i = 0; i < starCount; i++) {
         const isMajor = Math.random() < 0.05;
         const isBright = isMajor || Math.random() < 0.2;
-        const baseAlpha = isBright ? 0.75 + Math.random() * 0.25 : 0.4 + Math.random() * 0.4;
+        const baseAlpha = isBright ? 0.75 + Math.random() * 0.25 : 0.35 + Math.random() * 0.45;
 
         stars.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          radius: isMajor ? Math.random() * 1.0 + 1.8 : isBright ? Math.random() * 0.7 + 1.2 : Math.random() * 0.7 + 0.6,
+          radius: isMajor
+            ? Math.random() * 1.0 + 1.8
+            : isBright
+            ? Math.random() * 0.6 + 1.1
+            : Math.random() * 0.6 + 0.5,
           alpha: baseAlpha,
           baseAlpha,
           twinkleSpeed: (Math.random() * 0.02 + 0.006) * (Math.random() > 0.5 ? 1 : -1),
@@ -89,6 +82,34 @@ export default function Starfield() {
 
     initStars();
 
+    let resizeTimer: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (!canvas) return;
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.scale(dpr, dpr);
+        initStars();
+      }, 150);
+    };
+
+    // Battery & Performance Optimization: Pause rendering when screen is locked or hidden
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        isPaused = true;
+        cancelAnimationFrame(animationFrameId);
+      } else {
+        isPaused = false;
+        render();
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     let shootingStar: ShootingStar = {
       x: 0,
       y: 0,
@@ -99,44 +120,46 @@ export default function Starfield() {
       active: false,
     };
 
-    let nextShootingStarTime = Date.now() + 1500;
+    let nextShootingStarTime = Date.now() + 2000;
 
     const triggerShootingStar = () => {
       shootingStar = {
         x: Math.random() * (width * 0.75),
-        y: Math.random() * (height * 0.4),
-        length: Math.random() * 110 + 80,
-        speed: Math.random() * 15 + 12,
-        angle: (Math.PI / 180) * (30 + Math.random() * 25),
-        opacity: 1,
+        y: Math.random() * (height * 0.35),
+        length: Math.random() * 100 + 70,
+        speed: Math.random() * 14 + 10,
+        angle: (Math.PI / 180) * (32 + Math.random() * 24),
+        opacity: 0.95,
         active: true,
       };
     };
 
     const render = () => {
+      if (isPaused) return;
+
       ctx.clearRect(0, 0, width, height);
 
-      // Render crisp stars
+      // Render cosmic background stars
       for (let i = 0; i < stars.length; i++) {
         const star = stars[i];
 
         star.alpha += star.twinkleSpeed;
-        if (star.alpha > 1 || star.alpha < 0.3) {
+        if (star.alpha > 0.98 || star.alpha < 0.25) {
           star.twinkleSpeed = -star.twinkleSpeed;
         }
 
         ctx.fillStyle = star.color;
-        ctx.globalAlpha = Math.max(0.25, Math.min(1, star.alpha));
+        ctx.globalAlpha = Math.max(0.18, Math.min(1, star.alpha));
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
         ctx.fill();
 
         // Stellar diffraction cross for prominent celestial beacons
-        if (star.hasSpikes && star.alpha > 0.5) {
+        if (star.hasSpikes && star.alpha > 0.45) {
           ctx.strokeStyle = star.color;
-          ctx.lineWidth = 0.8;
-          ctx.globalAlpha = star.alpha * 0.5;
-          const spikeLen = star.radius * 4;
+          ctx.lineWidth = 0.7;
+          ctx.globalAlpha = star.alpha * 0.45;
+          const spikeLen = star.radius * 3.8;
 
           ctx.beginPath();
           ctx.moveTo(star.x - spikeLen, star.y);
@@ -146,9 +169,9 @@ export default function Starfield() {
           ctx.stroke();
 
           // Luminous aura
-          ctx.globalAlpha = star.alpha * 0.25;
+          ctx.globalAlpha = star.alpha * 0.2;
           ctx.beginPath();
-          ctx.arc(star.x, star.y, star.radius * 3.5, 0, Math.PI * 2);
+          ctx.arc(star.x, star.y, star.radius * 3.2, 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -157,7 +180,7 @@ export default function Starfield() {
       const now = Date.now();
       if (!shootingStar.active && now > nextShootingStarTime) {
         triggerShootingStar();
-        nextShootingStarTime = now + 5000 + Math.random() * 8000;
+        nextShootingStarTime = now + 6000 + Math.random() * 9000;
       }
 
       if (shootingStar.active) {
@@ -176,7 +199,7 @@ export default function Starfield() {
         grad.addColorStop(1, "rgba(255, 255, 255, 1)");
 
         ctx.strokeStyle = grad;
-        ctx.lineWidth = 2.0;
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.moveTo(tailX, tailY);
         ctx.lineTo(shootingStar.x, shootingStar.y);
@@ -198,6 +221,7 @@ export default function Starfield() {
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
@@ -206,6 +230,7 @@ export default function Starfield() {
     <canvas
       ref={canvasRef}
       className="pointer-events-none fixed inset-0 z-0 h-full w-full"
+      style={{ opacity: 0.96 }}
     />
   );
 }

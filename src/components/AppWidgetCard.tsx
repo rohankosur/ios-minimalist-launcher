@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useLauncher } from "@/context/LauncherContext";
-import { AppWidgetItem } from "@/types/launcher";
 
 export default function AppWidgetCard() {
-  const { apps, activeWidgetId, setActiveWidgetId, updateAppWidget } = useLauncher();
+  const { apps, activeWidgetId, setActiveWidgetId, updateAppWidget, mounted } = useLauncher();
   const [clockTime, setClockTime] = useState("");
   const [clockDate, setClockDate] = useState("");
   const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
@@ -34,7 +33,7 @@ export default function AppWidgetCard() {
     updateTime();
     const interval = setInterval(updateTime, 1000);
 
-    if ("getBattery" in navigator) {
+    if (typeof window !== "undefined" && "getBattery" in navigator) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (navigator as any).getBattery().then((battery: any) => {
         const updateBatt = () => {
@@ -52,7 +51,7 @@ export default function AppWidgetCard() {
 
   // Widget cycling logic
   const allWidgetIds = ["clock", ...apps.map((a) => a.id)];
-  const currentIndex = allWidgetIds.indexOf(activeWidgetId);
+  const currentIndex = Math.max(0, allWidgetIds.indexOf(activeWidgetId));
 
   const cyclePrev = () => {
     const nextIdx = (currentIndex - 1 + allWidgetIds.length) % allWidgetIds.length;
@@ -76,7 +75,9 @@ export default function AppWidgetCard() {
             </span>
             <span>•</span>
             {batteryLevel !== null ? (
-              <span>{batteryLevel}% {isCharging ? "bolt" : "charge"}</span>
+              <span>
+                {batteryLevel}% {isCharging ? "bolt" : "charge"}
+              </span>
             ) : (
               <span>orbital ready</span>
             )}
@@ -84,10 +85,10 @@ export default function AppWidgetCard() {
             <span>cosmos</span>
           </div>
           <h1 className="text-7xl sm:text-8xl md:text-9xl font-black tracking-tight text-white leading-none">
-            {clockTime || "00:00"}
+            {mounted && clockTime ? clockTime : "12:00"}
           </h1>
           <p className="text-lg sm:text-xl font-bold tracking-tight text-white/80 lowercase mt-2">
-            {clockDate || "loading..."}
+            {mounted && clockDate ? clockDate : "launching session..."}
           </p>
         </div>
       );
@@ -106,13 +107,14 @@ export default function AppWidgetCard() {
               </span>
               <a
                 href={scheme}
-                className="text-white/60 hover:text-white underline underline-offset-2 pointer-events-auto"
+                className="text-white/60 hover:text-white underline underline-offset-2 pointer-events-auto active:opacity-40"
               >
                 launch {label}
               </a>
             </div>
             <textarea
               value={widget.value}
+              onClick={(e) => e.stopPropagation()}
               onChange={(e) =>
                 updateAppWidget(activeApp.id, {
                   ...widget,
@@ -195,26 +197,53 @@ export default function AppWidgetCard() {
           <div className="w-full flex flex-col gap-2">
             <div className="flex items-center justify-between text-xs text-white/50 font-mono lowercase">
               <span className="flex items-center gap-1.5 font-bold text-white/80">
-                <span className={`inline-block w-1.5 h-1.5 rounded-full ${isPlaying ? "bg-emerald-400 animate-pulse" : "bg-white/30"}`} />
+                <span
+                  className={`inline-block w-1.5 h-1.5 rounded-full ${
+                    isPlaying ? "bg-emerald-400 animate-pulse" : "bg-white/30"
+                  }`}
+                />
                 {widget.title}
               </span>
-              <a href={scheme} className="text-white/60 hover:text-white underline underline-offset-2 pointer-events-auto">
+              <a
+                href={scheme}
+                className="text-white/60 hover:text-white underline underline-offset-2 pointer-events-auto active:opacity-40"
+              >
                 open {label}
               </a>
             </div>
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white/[0.06] transition-all pointer-events-auto">
-              <div className="flex flex-col max-w-[70%]">
-                <span className="text-base sm:text-lg font-bold text-white lowercase truncate">
-                  {widget.value}
-                </span>
-                <span className="text-xs text-white/40 lowercase truncate">
-                  {widget.subtitle || "audio session active"}
-                </span>
+              <div className="flex items-center gap-3 max-w-[75%]">
+                {/* Animated Audio Equalizer Bars */}
+                <div className="flex items-end gap-1 h-5 w-4 shrink-0">
+                  <span
+                    className={`w-1 bg-emerald-400 rounded-full transition-all duration-300 ${
+                      isPlaying ? "h-full animate-bounce" : "h-1 opacity-40"
+                    }`}
+                  />
+                  <span
+                    className={`w-1 bg-emerald-400 rounded-full transition-all duration-300 delay-100 ${
+                      isPlaying ? "h-3/4 animate-bounce" : "h-1 opacity-40"
+                    }`}
+                  />
+                  <span
+                    className={`w-1 bg-emerald-400 rounded-full transition-all duration-300 delay-200 ${
+                      isPlaying ? "h-4/5 animate-bounce" : "h-1 opacity-40"
+                    }`}
+                  />
+                </div>
+                <div className="flex flex-col truncate">
+                  <span className="text-base sm:text-lg font-bold text-white lowercase truncate">
+                    {widget.value}
+                  </span>
+                  <span className="text-xs text-white/40 lowercase truncate">
+                    {widget.subtitle || "audio session active"}
+                  </span>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white text-sm font-bold transition-all"
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white text-sm font-bold transition-all shrink-0"
               >
                 {isPlaying ? "❚❚" : "▶"}
               </button>
@@ -259,7 +288,10 @@ export default function AppWidgetCard() {
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400" />
                 {widget.title}
               </span>
-              <a href={scheme} className="text-white/60 hover:text-white underline underline-offset-2 pointer-events-auto">
+              <a
+                href={scheme}
+                className="text-white/60 hover:text-white underline underline-offset-2 pointer-events-auto active:opacity-40"
+              >
                 launch {label}
               </a>
             </div>
@@ -282,7 +314,10 @@ export default function AppWidgetCard() {
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-400" />
                 {widget.title}
               </span>
-              <a href={scheme} className="text-white/60 hover:text-white underline underline-offset-2 pointer-events-auto">
+              <a
+                href={scheme}
+                className="text-white/60 hover:text-white underline underline-offset-2 pointer-events-auto active:opacity-40"
+              >
                 view calendar
               </a>
             </div>

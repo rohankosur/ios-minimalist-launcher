@@ -1,7 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { AppWidgetItem, WidgetType, FocusMode, TextAlignment, DumbPhoneSettings } from "@/types/launcher";
+import {
+  AppWidgetItem,
+  WidgetType,
+  FocusMode,
+  TextAlignment,
+  DumbPhoneSettings,
+} from "@/types/launcher";
 import { DEFAULT_APPS, DEFAULT_DUMBPHONE_SETTINGS } from "@/lib/defaultConfig";
 
 interface LauncherContextType {
@@ -19,7 +25,7 @@ interface LauncherContextType {
   resetDefaults: () => void;
   isCustomizing: boolean;
   setIsCustomizing: (value: boolean) => void;
-  
+
   // Dumbphone Behavioral Engineering Features
   settings: DumbPhoneSettings;
   setFocusMode: (mode: FocusMode) => void;
@@ -30,10 +36,12 @@ interface LauncherContextType {
   setPendingMindfulApp: (app: AppWidgetItem | null) => void;
   isSearchOpen: boolean;
   setIsSearchOpen: (val: boolean) => void;
+  mounted: boolean;
 }
 
-const STORAGE_KEY = "ios_launcher_apps_v3";
-const SETTINGS_KEY = "ios_launcher_settings_v3";
+const STORAGE_KEY = "ios_launcher_apps_v4";
+const SETTINGS_KEY = "ios_launcher_settings_v4";
+const ACTIVE_WIDGET_KEY = "ios_launcher_active_widget_v4";
 
 const LauncherContext = createContext<LauncherContextType | undefined>(undefined);
 
@@ -46,21 +54,52 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
 
-  // Load from localStorage on client mount
+  // Load from localStorage on client mount with schema sanitization
   useEffect(() => {
     try {
       const savedApps = localStorage.getItem(STORAGE_KEY);
       if (savedApps) {
         const parsed = JSON.parse(savedApps);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setApps(parsed);
+          // Backward-compatible sanitization for all apps
+          const sanitized = parsed.map((app: Partial<AppWidgetItem>) => ({
+            id: app.id || `app_${Date.now()}`,
+            label: (app.label || "app").toLowerCase(),
+            scheme: app.scheme || "tel:",
+            description: app.description || "Application",
+            category: app.category || "custom",
+            enabled: app.enabled !== false,
+            mindfulDelay: Boolean(app.mindfulDelay),
+            modes:
+              Array.isArray(app.modes) && app.modes.length > 0
+                ? app.modes
+                : (["all", "essential", "focus", "personal"] as FocusMode[]),
+            widget: {
+              type: app.widget?.type || "telemetry",
+              title: app.widget?.title || `${app.label || "app"} widget`,
+              subtitle: app.widget?.subtitle || "quick action",
+              value: app.widget?.value || "active session",
+              detail: app.widget?.detail || app.scheme || "",
+            },
+          }));
+          setApps(sanitized);
         }
       }
+
       const savedSettings = localStorage.getItem(SETTINGS_KEY);
       if (savedSettings) {
-        setSettings((prev) => ({ ...prev, ...JSON.parse(savedSettings) }));
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings((prev) => ({
+          ...prev,
+          ...parsedSettings,
+          dailyOpensCount:
+            parsedSettings.lastOpensDate === new Date().toISOString().split("T")[0]
+              ? parsedSettings.dailyOpensCount || 0
+              : 0,
+        }));
       }
-      const savedWidgetId = localStorage.getItem("ios_launcher_active_widget_v3");
+
+      const savedWidgetId = localStorage.getItem(ACTIVE_WIDGET_KEY);
       if (savedWidgetId) {
         setActiveWidgetId(savedWidgetId);
       }
@@ -94,7 +133,7 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
     try {
-      localStorage.setItem("ios_launcher_active_widget_v3", activeWidgetId);
+      localStorage.setItem(ACTIVE_WIDGET_KEY, activeWidgetId);
     } catch (e) {
       console.warn("Failed to save active widget id:", e);
     }
@@ -151,7 +190,7 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(SETTINGS_KEY);
-      localStorage.removeItem("ios_launcher_active_widget_v3");
+      localStorage.removeItem(ACTIVE_WIDGET_KEY);
     } catch {}
   };
 
@@ -203,6 +242,7 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
         setPendingMindfulApp,
         isSearchOpen,
         setIsSearchOpen,
+        mounted,
       }}
     >
       {children}
