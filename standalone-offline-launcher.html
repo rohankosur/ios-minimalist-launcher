@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#050f2d" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="launcher" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>launcher</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+    html, body {
+      background-color: #050f2d !important;
+      color: #ffffff !important;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Helvetica Neue", sans-serif;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      -webkit-overscroll-behavior: none;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .pb-safe {
+      padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 12px);
+    }
+    .pt-safe {
+      padding-top: calc(env(safe-area-inset-top, 20px) + 8px);
+    }
+    .glass-deck {
+      background-color: rgba(5, 15, 45, 0.4);
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      border-top-left-radius: 36px;
+      border-top-right-radius: 36px;
+    }
+    .tap-target {
+      transition: opacity 120ms cubic-bezier(0.2, 0, 0, 1), transform 120ms cubic-bezier(0.2, 0, 0, 1);
+    }
+    .tap-target:active {
+      opacity: 0.35;
+      transform: scale(0.985);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between relative h-full w-full">
+  <!-- Starfield Canvas -->
+  <canvas id="star-canvas" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
+
+  <!-- Cosmic Gradient Overlays -->
+  <div style="position:fixed;inset:0;background:radial-gradient(ellipse 90% 90% at 50% 0%,#091b42 0%,#050f2d 45%,#02040b 100%);pointer-events:none;z-index:0;opacity:0.85;"></div>
+
+  <!-- Ergonomic Viewport Container -->
+  <main style="position:relative;z-index:10;width:100%;max-width:440px;height:100%;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;margin:0 auto;">
+    
+    <!-- Top Widget Area (Upper 50%) -->
+    <header style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 24px;" class="pt-safe">
+      <!-- Widget Carousel Tabs -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div id="widget-tabs" class="no-scrollbar" style="display:flex;align-items:center;gap:6px;overflow-x:auto;max-width:85%;padding:4px 0;"></div>
+        <div style="display:flex;align-items:center;gap:4px;color:rgba(255,255,255,0.4);font-size:12px;">
+          <button id="btn-prev-widget" style="background:none;border:none;color:inherit;cursor:pointer;padding:4px;">←</button>
+          <button id="btn-next-widget" style="background:none;border:none;color:inherit;cursor:pointer;padding:4px;">→</button>
+        </div>
+      </div>
+
+      <!-- Active Widget Body -->
+      <div id="widget-body" style="min-height:140px;display:flex;flex-direction:column;justify-content:center;"></div>
+    </header>
+
+    <!-- Lower Half: Glassmorphism Nav Deck (Thumb Zone) -->
+    <section class="pb-safe" style="width:100%;display:flex;flex-direction:column;justify-content:end;">
+      <!-- Active Feedback Toast -->
+      <div id="toast" style="display:none;margin:0 24px 10px;padding:8px 16px;border-radius:12px;background:rgba(255,255,255,0.12);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);font-size:12px;font-family:monospace;justify-content:space-between;align-items:center;">
+        <span id="toast-text"></span>
+        <span style="font-size:10px;color:#34d399;text-transform:uppercase;letter-spacing:1px;">dispatched</span>
+      </div>
+
+      <!-- Glass Navigation Block -->
+      <nav class="glass-deck" style="padding:24px 24px 20px;display:flex;flex-direction:column;">
+        <!-- Focus Modes Row -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div id="mode-pills" style="display:flex;align-items:center;gap:6px;"></div>
+          <button id="btn-search-trigger" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:11px;font-family:monospace;cursor:pointer;">search (a-z)</button>
+        </div>
+
+        <!-- Dynamic App List -->
+        <div id="app-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+
+        <!-- Bottom Status Bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.4);font-family:monospace;">
+          <button id="btn-customize-trigger" style="background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.85);padding:4px 12px;border-radius:16px;font-size:11px;font-family:inherit;font-weight:bold;cursor:pointer;">⚙ customize</button>
+          <span id="opens-counter">0 opens today</span>
+        </div>
+      </nav>
+    </section>
+  </main>
+
+  <!-- Mindful Breathing Pause Modal -->
+  <div id="mindful-modal" style="display:none;position:fixed;inset:0;z-index:50;background:rgba(3,7,24,0.95);-webkit-backdrop-filter:blur(32px);backdrop-filter:blur(32px);flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
+    <div style="position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+      <svg style="width:100%;height:100%;transform:rotate(-90deg);" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"></circle>
+        <circle id="mindful-circle" cx="50" cy="50" r="45" fill="none" stroke="#38bdf8" stroke-width="4" stroke-dasharray="283" stroke-dashoffset="0" stroke-linecap="round" style="transition:stroke-dashoffset 1s linear;"></circle>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <span id="mindful-number" style="font-size:36px;font-weight:900;font-family:monospace;">4</span>
+        <span style="font-size:10px;text-transform:uppercase;color:rgba(255,255,255,0.5);letter-spacing:1px;font-family:monospace;">pause</span>
+      </div>
+    </div>
+    <h2 style="font-size:24px;font-weight:900;margin-bottom:6px;text-transform:lowercase;">pause & breathe</h2>
+    <p id="mindful-prompt" style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:28px;text-transform:lowercase;max-width:280px;line-height:1.4;"></p>
+    <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px;">
+      <button id="btn-mindful-cancel" style="padding:14px;border-radius:18px;background:#ffffff;color:#050f2d;font-weight:900;font-size:13px;border:none;cursor:pointer;text-transform:lowercase;">stay mindful (cancel)</button>
+      <button id="btn-mindful-proceed" disabled style="padding:12px;border-radius:18px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);font-size:12px;font-weight:bold;border:1px solid rgba(255,255,255,0.1);cursor:not-allowed;text-transform:lowercase;">proceed</button>
+    </div>
+  </div>
+
+  <!-- A-Z Search Drawer -->
+  <div id="search-modal" style="display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0.7);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);flex-direction:column;justify-content:flex-end;">
+    <div style="background:rgba(5,15,45,0.96);border-top-left-radius:36px;border-top-right-radius:36px;height:82vh;display:flex;flex-direction:column;overflow:hidden;max-width:440px;margin:0 auto;width:100%;">
+      <div style="padding:20px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:10px;">
+        <input id="search-input" type="text" placeholder="type app name..." style="flex:1;background:rgba(255,255,255,0.08);border:none;padding:12px 16px;border-radius:16px;color:#fff;font-size:14px;outline:none;text-transform:lowercase;" />
+        <button id="btn-search-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;padding:10px 14px;border-radius:14px;font-size:12px;cursor:pointer;">close</button>
+      </div>
+      <div id="search-results" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- Starfield Engine ---
+    (function initStars() {
+      const canvas = document.getElementById("star-canvas");
+      const ctx = canvas.getContext("2d");
+      let w = canvas.width = window.innerWidth;
+      let h = canvas.height = window.innerHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.scale(dpr, dpr);
+
+      const colors = ["#fff", "#f0f9ff", "#e0f2fe", "#93c5fd", "#c7d2fe"];
+      const stars = [];
+      const count = Math.floor((w * h) / 1800);
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() < 0.1 ? Math.random() * 1.0 + 1.6 : Math.random() * 0.7 + 0.5,
+          a: 0.3 + Math.random() * 0.6,
+          s: (Math.random() * 0.02 + 0.006) * (Math.random() > 0.5 ? 1 : -1),
+          c: colors[Math.floor(Math.random() * colors.length)],
+          spike: Math.random() < 0.04
+        });
+      }
+
+      function draw() {
+        if (document.hidden) { requestAnimationFrame(draw); return; }
+        ctx.clearRect(0, 0, w, h);
+        for (let i = 0; i < stars.length; i++) {
+          const s = stars[i];
+          s.a += s.s;
+          if (s.a > 0.98 || s.a < 0.25) s.s = -s.s;
+          ctx.fillStyle = s.c;
+          ctx.globalAlpha = Math.max(0.18, Math.min(1, s.a));
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (s.spike && s.a > 0.45) {
+            ctx.strokeStyle = s.c;
+            ctx.lineWidth = 0.7;
+            ctx.globalAlpha = s.a * 0.45;
+            ctx.beginPath();
+            ctx.moveTo(s.x - s.r * 4, s.y); ctx.lineTo(s.x + s.r * 4, s.y);
+            ctx.moveTo(s.x, s.y - s.r * 4); ctx.lineTo(s.x, s.y + s.r * 4);
+            ctx.stroke();
+          }
+        }
+        requestAnimationFrame(draw);
+      }
+      draw();
+      window.addEventListener("resize", () => {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.scale(dpr, dpr);
+      });
+    })();
+
+    // --- State & App Data ---
+    const STORAGE_KEY = "ios_launcher_apps_offline";
+    const DEFAULT_APPS = [
+      { id: "phone", label: "phone", scheme: "tel:", widget: { type: "contact", title: "speed contact", value: "favorite contact", detail: "tel:911" }, modes: ["all", "essential", "personal"] },
+      { id: "messages", label: "messages", scheme: "sms:", widget: { type: "sms", title: "quick message", value: "running 5 mins late", detail: "sms:&body=on%20my%20way" }, modes: ["all", "essential", "personal"] },
+      { id: "notes", label: "notes", scheme: "mobilenotes://", widget: { type: "scratchpad", title: "quick scratchpad", value: "orbital mission notes • ship v1", detail: "mobilenotes://" }, modes: ["all", "essential", "focus"] },
+      { id: "spotify", label: "spotify", scheme: "spotify://", widget: { type: "music", title: "now playing", value: "brian eno — an ending", detail: "spotify://" }, modes: ["all", "personal"] },
+      { id: "maps", label: "google maps", scheme: "comgooglemaps://", widget: { type: "maps", title: "transit beacon", value: "home via 101-s", detail: "comgooglemaps://?daddr=Home" }, modes: ["all", "essential", "personal"] },
+      { id: "settings", label: "settings", scheme: "App-prefs://", widget: { type: "telemetry", title: "device telemetry", value: "battery 80% • storage 128gb", detail: "App-prefs://" }, modes: ["all", "essential", "focus", "personal"] }
+    ];
+
+    let apps = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || DEFAULT_APPS;
+    let activeMode = "all";
+    let activeWidget = "clock";
+    let opensCount = parseInt(localStorage.getItem("ios_opens_count") || "0", 10);
+    let pendingApp = null;
+    let countdownTimer = null;
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+      localStorage.setItem("ios_opens_count", opensCount.toString());
+    }
+
+    // --- DOM Elements ---
+    const appListEl = document.getElementById("app-list");
+    const widgetBodyEl = document.getElementById("widget-body");
+    const widgetTabsEl = document.getElementById("widget-tabs");
+    const modePillsEl = document.getElementById("mode-pills");
+    const opensCounterEl = document.getElementById("opens-counter");
+    const toastEl = document.getElementById("toast");
+    const toastTextEl = document.getElementById("toast-text");
+
+    // --- Render Functions ---
+    function renderModes() {
+      const modes = ["all", "essential", "focus", "personal"];
+      modePillsEl.innerHTML = modes.map(m => `
+        <button onclick="setMode('${m}')" style="background:${activeMode === m ? 'rgba(255,255,255,0.2)' : 'none'};border:none;color:${activeMode === m ? '#fff' : 'rgba(255,255,255,0.4)'};padding:2px 8px;border-radius:12px;font-size:10px;font-family:monospace;cursor:pointer;font-weight:${activeMode === m ? 'bold' : 'normal'};text-transform:lowercase;">${m}</button>
+      `).join("");
+    }
+
+    function renderApps() {
+      const visible = apps.filter(a => activeMode === "all" || (a.modes && a.modes.includes(activeMode)));
+      appListEl.innerHTML = visible.map(a => `
+        <a href="${a.scheme}" onclick="handleAppClick(event, '${a.id}')" class="tap-target" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:18px;text-decoration:none;color:#fff;">
+          <span style="font-size:32px;font-weight:900;letter-spacing:-0.5px;text-transform:lowercase;">${a.label}</span>
+          <span style="font-size:11px;font-family:monospace;color:rgba(255,255,255,0.3);text-transform:lowercase;">${a.scheme}</span>
+        </a>
+      `).join("");
+      opensCounterEl.textContent = `${opensCount} opens today`;
+    }
+
+    function renderWidgets() {
+      const tabs = [{ id: "clock", label: "clock" }, ...apps];
+      widgetTabsEl.innerHTML = tabs.map(t => `
+        <button onclick="setWidget('${t.id}')" style="flex-shrink:0;padding:4px 10px;border-radius:16px;border:none;font-size:11px;font-family:monospace;cursor:pointer;background:${activeWidget === t.id ? '#fff' : 'rgba(255,255,255,0.1)'};color:${activeWidget === t.id ? '#050f2d' : 'rgba(255,255,255,0.6)'};font-weight:${activeWidget === t.id ? 'bold' : 'normal'};text-transform:lowercase;">${t.label}</button>
+      `).join("");
+
+      if (activeWidget === "clock") {
+        const now = new Date();
+        const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        const date = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }).toLowerCase();
+        widgetBodyEl.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,0.5);font-family:monospace;margin-bottom:6px;text-transform:lowercase;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#34d399;display:inline-block;"></span>
+            <span>offline ready</span> • <span>orbital sync</span>
+          </div>
+          <h1 style="font-size:78px;font-weight:900;letter-spacing:-2px;line-height:1;color:#fff;">${time}</h1>
+          <p style="font-size:18px;font-weight:700;color:rgba(255,255,255,0.8);margin-top:6px;text-transform:lowercase;">${date}</p>
+        `;
+      } else {
+        const app = apps.find(a => a.id === activeWidget) || apps[0];
+        const w = app.widget;
+        if (w.type === "scratchpad") {
+          widgetBodyEl.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;font-family:monospace;color:rgba(255,255,255,0.6);">
+              <span style="font-weight:bold;color:#fde047;">● ${w.title}</span>
+              <a href="${app.scheme}" style="color:rgba(255,255,255,0.5);text-decoration:underline;">launch ${app.label}</a>
+            </div>
+            <textarea id="scratchpad-input" oninput="updateScratchpad(event, '${app.id}')" style="width:100%;height:68px;border-radius:16px;background:rgba(255,255,255,0.08);border:none;color:#fff;padding:12px;font-size:14px;outline:none;resize:none;font-weight:bold;">${w.value}</textarea>
+          `;
+        } else {
+          widgetBodyEl.innerHTML = `
+            <div style="font-size:11px;font-family:monospace;color:rgba(255,255,255,0.5);margin-bottom:6px;text-transform:lowercase;">${w.title}</div>
+            <a href="${w.detail || app.scheme}" style="display:flex;align-items:center;justify-content:space-between;padding:14px;border-radius:18px;background:rgba(255,255,255,0.08);text-decoration:none;color:#fff;">
+              <span style="font-size:16px;font-weight:bold;text-transform:lowercase;">${w.value}</span>
+              <span style="padding:4px 10px;border-radius:12px;background:rgba(255,255,255,0.15);font-size:11px;font-family:monospace;">trigger</span>
+            </a>
+          `;
+        }
+      }
+    }
+
+    // --- Interactive Handlers ---
+    window.setMode = function(m) { activeMode = m; renderModes(); renderApps(); };
+    window.setWidget = function(w) { activeWidget = w; renderWidgets(); };
+    window.updateScratchpad = function(e, id) {
+      const app = apps.find(a => a.id === id);
+      if (app) { app.widget.value = e.target.value; saveState(); }
+    };
+
+    window.handleAppClick = function(e, id) {
+      const app = apps.find(a => a.id === id);
+      if (!app) return;
+      opensCount++;
+      saveState();
+      activeWidget = id;
+      renderWidgets();
+
+      if (navigator.vibrate) navigator.vibrate(15);
+      toastTextEl.textContent = `${app.label} ➔ ${app.scheme}`;
+      toastEl.style.display = "flex";
+      setTimeout(() => { toastEl.style.display = "none"; }, 2500);
+    };
+
+    document.getElementById("btn-prev-widget").onclick = () => {
+      const tabs = ["clock", ...apps.map(a => a.id)];
+      const idx = (tabs.indexOf(activeWidget) - 1 + tabs.length) % tabs.length;
+      setWidget(tabs[idx]);
+    };
+    document.getElementById("btn-next-widget").onclick = () => {
+      const tabs = ["clock", ...apps.map(a => a.id)];
+      const idx = (tabs.indexOf(activeWidget) + 1) % tabs.length;
+      setWidget(tabs[idx]);
+    };
+
+    // A-Z Search Drawer
+    const searchModal = document.getElementById("search-modal");
+    const searchInput = document.getElementById("search-input");
+    const searchResults = document.getElementById("search-results");
+
+    document.getElementById("btn-search-trigger").onclick = () => {
+      searchModal.style.display = "flex";
+      searchInput.value = "";
+      renderSearchResults("");
+      setTimeout(() => searchInput.focus(), 50);
+    };
+    document.getElementById("btn-search-close").onclick = () => { searchModal.style.display = "none"; };
+    searchInput.oninput = (e) => renderSearchResults(e.target.value);
+
+    function renderSearchResults(q) {
+      const filtered = apps.filter(a => !q || a.label.includes(q.toLowerCase()));
+      searchResults.innerHTML = filtered.map(a => `
+        <a href="${a.scheme}" onclick="handleAppClick(event, '${a.id}'); searchModal.style.display='none';" style="display:flex;justify-content:space-between;padding:12px;border-radius:14px;background:rgba(255,255,255,0.05);text-decoration:none;color:#fff;">
+          <span style="font-size:18px;font-weight:bold;">${a.label}</span>
+          <span style="font-size:11px;font-family:monospace;color:rgba(255,255,255,0.4);">${a.scheme}</span>
+        </a>
+      `).join("");
+    }
+
+    // Init Render & Clock interval
+    renderModes();
+    renderApps();
+    renderWidgets();
+    setInterval(() => { if (activeWidget === "clock") renderWidgets(); }, 1000);
+  </script>
+</body>
+</html>
