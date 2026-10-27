@@ -7,6 +7,7 @@ import PWAClientManager from "@/components/PWAClientManager";
 import CustomizeModal from "@/components/CustomizeModal";
 import MindfulDelayModal from "@/components/MindfulDelayModal";
 import AppSearchDrawer from "@/components/AppSearchDrawer";
+import WidgetModal from "@/components/WidgetModal";
 import { useLauncher } from "@/context/LauncherContext";
 
 export default function LauncherDeck() {
@@ -47,6 +48,9 @@ export default function LauncherDeck() {
           <LauncherNav />
         </div>
       </div>
+
+      {/* Widget Studio & Management Modal */}
+      <WidgetModal />
 
       {/* Dumb Phone Mindful Friction Delay Modal */}
       <MindfulDelayModal />

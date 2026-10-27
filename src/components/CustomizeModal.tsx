@@ -37,6 +37,7 @@ export default function CustomizeModal() {
     setFontSize,
     toggleOledMode,
     updateSettings,
+    setIsWidgetModalOpen,
   } = useLauncher();
 
   const [selectedAppId, setSelectedAppId] = useState<string>(apps[0]?.id || "");
@@ -155,6 +156,28 @@ export default function CustomizeModal() {
 
         {/* Scrollable Content Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4">
+          {/* Direct Widget Studio Trigger */}
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-400/25">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-white lowercase">
+                widget studio &amp; catalog
+              </span>
+              <span className="text-[10px] text-white/60 lowercase">
+                weather • interactive todos • quotes • ambient sound
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsCustomizing(false);
+                setIsWidgetModalOpen(true);
+              }}
+              className="px-3 py-1.5 rounded-full bg-emerald-400 hover:bg-emerald-300 text-[#050f2d] font-bold text-xs lowercase transition-all active:scale-95"
+            >
+              open studio ➔
+            </button>
+          </div>
+
           {/* Global Dumb Phone Settings Card */}
           <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex flex-col gap-3">
             <span className="text-xs uppercase tracking-wider font-semibold text-white/40">

@@ -4,12 +4,16 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   AppWidgetItem,
   WidgetType,
+  WidgetKind,
+  WidgetInstance,
+  WidgetLayoutMode,
   FocusMode,
   TextAlignment,
   AppFontSize,
   DumbPhoneSettings,
 } from "@/types/launcher";
 import { DEFAULT_APPS, DEFAULT_DUMBPHONE_SETTINGS } from "@/lib/defaultConfig";
+import { DEFAULT_WIDGETS, WIDGET_CATALOG } from "@/lib/defaultWidgets";
 
 interface LauncherContextType {
   apps: AppWidgetItem[];
@@ -27,11 +31,24 @@ interface LauncherContextType {
   isCustomizing: boolean;
   setIsCustomizing: (value: boolean) => void;
 
+  // Standalone Widget Engine
+  widgets: WidgetInstance[];
+  activeWidgetIndex: number;
+  setActiveWidgetIndex: (index: number) => void;
+  addWidget: (kind: WidgetKind, title?: string) => void;
+  updateWidget: (id: string, updated: Partial<WidgetInstance>) => void;
+  removeWidget: (id: string) => void;
+  reorderWidgets: (fromIndex: number, toIndex: number) => void;
+  cycleWidget: (direction: "prev" | "next") => void;
+  isWidgetModalOpen: boolean;
+  setIsWidgetModalOpen: (val: boolean) => void;
+
   // Dumbphone Behavioral Engineering Features
   settings: DumbPhoneSettings;
   setFocusMode: (mode: FocusMode) => void;
   setTextAlignment: (align: TextAlignment) => void;
   setFontSize: (size: AppFontSize) => void;
+  setWidgetLayout: (mode: WidgetLayoutMode) => void;
   toggleOledMode: () => void;
   updateSettings: (newSettings: Partial<DumbPhoneSettings>) => void;
   recordAppOpen: () => void;
@@ -42,16 +59,19 @@ interface LauncherContextType {
   mounted: boolean;
 }
 
-const STORAGE_KEY = "ios_launcher_apps_v5";
-const SETTINGS_KEY = "ios_launcher_settings_v5";
-const ACTIVE_WIDGET_KEY = "ios_launcher_active_widget_v5";
+const APPS_STORAGE_KEY = "ios_launcher_apps_v5";
+const SETTINGS_STORAGE_KEY = "ios_launcher_settings_v5";
+const WIDGETS_STORAGE_KEY = "ios_launcher_widgets_v1";
 
 const LauncherContext = createContext<LauncherContextType | undefined>(undefined);
 
 export function LauncherProvider({ children }: { children: React.ReactNode }) {
   const [apps, setApps] = useState<AppWidgetItem[]>(DEFAULT_APPS);
   const [activeWidgetId, setActiveWidgetId] = useState<string>("clock");
+  const [widgets, setWidgets] = useState<WidgetInstance[]>(DEFAULT_WIDGETS);
+  const [activeWidgetIndex, setActiveWidgetIndex] = useState<number>(0);
   const [isCustomizing, setIsCustomizing] = useState<boolean>(false);
+  const [isWidgetModalOpen, setIsWidgetModalOpen] = useState<boolean>(false);
   const [settings, setSettings] = useState<DumbPhoneSettings>(DEFAULT_DUMBPHONE_SETTINGS);
   const [pendingMindfulApp, setPendingMindfulApp] = useState<AppWidgetItem | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
@@ -60,8 +80,7 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
   // Load from localStorage on client mount with schema sanitization
   useEffect(() => {
     try {
-      // Check v5 first, fallback to v4
-      const savedApps = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("ios_launcher_apps_v4");
+      const savedApps = localStorage.getItem(APPS_STORAGE_KEY) || localStorage.getItem("ios_launcher_apps_v4");
       if (savedApps) {
         const parsed = JSON.parse(savedApps);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -89,13 +108,14 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const savedSettings = localStorage.getItem(SETTINGS_KEY) || localStorage.getItem("ios_launcher_settings_v4");
+      const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY) || localStorage.getItem("ios_launcher_settings_v4");
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings);
         setSettings((prev) => ({
           ...prev,
           ...parsedSettings,
           fontSize: parsedSettings.fontSize || "normal",
+          widgetLayout: parsedSettings.widgetLayout || "carousel",
           oledMode: Boolean(parsedSettings.oledMode),
           dailyOpensCount:
             parsedSettings.lastOpensDate === new Date().toISOString().split("T")[0]
@@ -104,9 +124,12 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
         }));
       }
 
-      const savedWidgetId = localStorage.getItem(ACTIVE_WIDGET_KEY) || localStorage.getItem("ios_launcher_active_widget_v4");
-      if (savedWidgetId) {
-        setActiveWidgetId(savedWidgetId);
+      const savedWidgets = localStorage.getItem(WIDGETS_STORAGE_KEY);
+      if (savedWidgets) {
+        const parsedWidgets = JSON.parse(savedWidgets);
+        if (Array.isArray(parsedWidgets) && parsedWidgets.length > 0) {
+          setWidgets(parsedWidgets);
+        }
       }
     } catch (e) {
       console.warn("Failed to load launcher configuration from localStorage:", e);
@@ -118,7 +141,7 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+      localStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(apps));
     } catch (e) {
       console.warn("Failed to save apps:", e);
     }
@@ -128,21 +151,21 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
     try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     } catch (e) {
       console.warn("Failed to save settings:", e);
     }
   }, [settings, mounted]);
 
-  // Save active widget
+  // Save widgets whenever they change
   useEffect(() => {
     if (!mounted) return;
     try {
-      localStorage.setItem(ACTIVE_WIDGET_KEY, activeWidgetId);
+      localStorage.setItem(WIDGETS_STORAGE_KEY, JSON.stringify(widgets));
     } catch (e) {
-      console.warn("Failed to save active widget id:", e);
+      console.warn("Failed to save widgets:", e);
     }
-  }, [activeWidgetId, mounted]);
+  }, [widgets, mounted]);
 
   const updateApp = (id: string, updated: Partial<AppWidgetItem>) => {
     setApps((prev) =>
@@ -188,10 +211,61 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // Widget management functions
+  const addWidget = (kind: WidgetKind, customTitle?: string) => {
+    const catalogItem = WIDGET_CATALOG.find((c) => c.kind === kind);
+    const newWidget: WidgetInstance = {
+      id: `w_${Date.now()}`,
+      kind,
+      title: customTitle || catalogItem?.title || kind,
+      subtitle: catalogItem?.description || "",
+      enabled: true,
+      order: widgets.length,
+      config: catalogItem ? { ...catalogItem.defaultConfig } : {},
+    };
+    setWidgets((prev) => [...prev, newWidget]);
+    setActiveWidgetIndex(widgets.length);
+  };
+
+  const updateWidget = (id: string, updated: Partial<WidgetInstance>) => {
+    setWidgets((prev) =>
+      prev.map((w) => (w.id === id ? { ...w, ...updated, config: { ...w.config, ...updated.config } } : w))
+    );
+  };
+
+  const removeWidget = (id: string) => {
+    setWidgets((prev) => prev.filter((w) => w.id !== id));
+    setActiveWidgetIndex(0);
+  };
+
+  const reorderWidgets = (fromIndex: number, toIndex: number) => {
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= widgets.length || toIndex >= widgets.length) {
+      return;
+    }
+    setWidgets((prev) => {
+      const copy = [...prev];
+      const [moved] = copy.splice(fromIndex, 1);
+      copy.splice(toIndex, 0, moved);
+      return copy.map((w, idx) => ({ ...w, order: idx }));
+    });
+  };
+
+  const cycleWidget = (direction: "prev" | "next") => {
+    const enabledWidgets = widgets.filter((w) => w.enabled);
+    if (enabledWidgets.length === 0) return;
+    if (direction === "prev") {
+      setActiveWidgetIndex((prev) => (prev - 1 + enabledWidgets.length) % enabledWidgets.length);
+    } else {
+      setActiveWidgetIndex((prev) => (prev + 1) % enabledWidgets.length);
+    }
+  };
+
   const resetDefaults = () => {
     setApps(DEFAULT_APPS);
+    setWidgets(DEFAULT_WIDGETS);
     setSettings(DEFAULT_DUMBPHONE_SETTINGS);
     setActiveWidgetId("clock");
+    setActiveWidgetIndex(0);
     try {
       localStorage.clear();
     } catch {}
@@ -207,6 +281,10 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
 
   const setFontSize = (size: AppFontSize) => {
     setSettings((prev) => ({ ...prev, fontSize: size }));
+  };
+
+  const setWidgetLayout = (mode: WidgetLayoutMode) => {
+    setSettings((prev) => ({ ...prev, widgetLayout: mode }));
   };
 
   const toggleOledMode = () => {
@@ -244,10 +322,21 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
         resetDefaults,
         isCustomizing,
         setIsCustomizing,
+        widgets,
+        activeWidgetIndex,
+        setActiveWidgetIndex,
+        addWidget,
+        updateWidget,
+        removeWidget,
+        reorderWidgets,
+        cycleWidget,
+        isWidgetModalOpen,
+        setIsWidgetModalOpen,
         settings,
         setFocusMode,
         setTextAlignment,
         setFontSize,
+        setWidgetLayout,
         toggleOledMode,
         updateSettings,
         recordAppOpen,

@@ -8,13 +8,82 @@ export type WidgetType =
   | "now_playing"
   | "directions"
   | "telemetry"
-  | "agenda";
+  | "agenda"
+  | "tasks"
+  | "habits"
+  | "countdown";
+
+export type WidgetKind =
+  | "clock"
+  | "weather"
+  | "quote"
+  | "tasks"
+  | "scratchpad"
+  | "habits"
+  | "now_playing"
+  | "telemetry"
+  | "agenda"
+  | "contact"
+  | "countdown";
 
 export type FocusMode = "essential" | "focus" | "personal" | "all";
 
 export type TextAlignment = "left" | "center" | "right";
 
 export type AppFontSize = "compact" | "normal" | "large";
+
+export type WidgetLayoutMode = "carousel" | "stack";
+
+export interface TaskItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+export interface HabitItem {
+  id: string;
+  name: string;
+  streak: number;
+  completedToday: boolean;
+}
+
+export interface WidgetConfig {
+  // Weather
+  temp?: string;
+  condition?: string;
+  location?: string;
+  unit?: "F" | "C";
+  // Quote
+  quoteText?: string;
+  quoteAuthor?: string;
+  // Tasks
+  tasks?: TaskItem[];
+  // Memo
+  memoText?: string;
+  // Habits
+  habits?: HabitItem[];
+  // Contact
+  contactName?: string;
+  contactNumber?: string;
+  // Countdown
+  targetDate?: string;
+  targetEvent?: string;
+  // Now Playing
+  ambientPreset?: "deep_space" | "cosmic_rain" | "zen_waves";
+  // Telemetry
+  showBattery?: boolean;
+  showOpens?: boolean;
+}
+
+export interface WidgetInstance {
+  id: string;
+  kind: WidgetKind;
+  title: string;
+  subtitle?: string;
+  enabled: boolean;
+  order: number;
+  config: WidgetConfig;
+}
 
 export interface AppWidgetItem {
   id: string;
@@ -53,6 +122,7 @@ export interface DumbPhoneSettings {
   textAlignment: TextAlignment;
   fontSize: AppFontSize;
   oledMode: boolean; // True OLED Pitch-Black vs Starfield Space Wallpaper
+  widgetLayout: WidgetLayoutMode; // carousel vs stack
   globalMindfulDelay: boolean;
   mindfulDelaySeconds: number;
   dailyOpensCount: number;

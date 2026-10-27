@@ -5,6 +5,7 @@ export const DEFAULT_DUMBPHONE_SETTINGS: DumbPhoneSettings = {
   textAlignment: "left",
   fontSize: "normal",
   oledMode: false,
+  widgetLayout: "carousel",
   globalMindfulDelay: false,
   mindfulDelaySeconds: 4,
   dailyOpensCount: 0,
