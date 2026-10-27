@@ -1,6 +1,6 @@
-const CACHE_NAME = "ios-launcher-offline-v5";
+const CACHE_NAME = "ios-launcher-v7";
 
-// Install event: cache current shell assets relative to service worker scope
+// Pre-cache core offline shell assets
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
@@ -27,13 +27,14 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Activate event: claim clients and purge older caches
+// Activate event: claim clients and purge all outdated caches immediately
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log("[SW] Purging old cache:", key);
             return caches.delete(key);
           }
         })
@@ -42,44 +43,30 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Fetch event: Cache-First strategy with background revalidation for offline PWA
+// Fetch event: Network-First strategy with fallback to Cache
+// This guarantees instant deployment updates while preserving 100% offline capability
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-
-  // Only handle http / https requests
   if (!event.request.url.startsWith("http")) return;
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Return from local cache immediately, fetch fresh copy in background if online
-        fetch(event.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
-            }
-          })
-          .catch(() => {
-            // Offline - no network, cached response was already served
-          });
-        return cachedResponse;
-      }
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+        }
+        return networkResponse;
+      })
+      .catch(async () => {
+        // Offline mode: match from local cache
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
 
-      // If not in cache, fetch from network and dynamically cache for future offline launches
-      return fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          // Fallback to cached root shell if navigation request
-          if (event.request.mode === "navigate") {
-            return caches.match(self.registration.scope);
-          }
-        });
-    })
+        // Fallback for document navigation
+        if (event.request.mode === "navigate") {
+          return caches.match(self.registration.scope);
+        }
+      })
   );
 });

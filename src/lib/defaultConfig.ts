@@ -3,6 +3,8 @@ import { AppWidgetItem, PresetScheme, DumbPhoneSettings } from "@/types/launcher
 export const DEFAULT_DUMBPHONE_SETTINGS: DumbPhoneSettings = {
   activeMode: "all",
   textAlignment: "left",
+  fontSize: "normal",
+  oledMode: false,
   globalMindfulDelay: false,
   mindfulDelaySeconds: 4,
   dailyOpensCount: 0,
@@ -117,6 +119,32 @@ export const DEFAULT_APPS: AppWidgetItem[] = [
 
 export const PRESET_LIBRARY: PresetScheme[] = [
   {
+    label: "weather",
+    scheme: "weather:",
+    category: "system",
+    description: "Apple Weather",
+    defaultWidget: {
+      type: "weather",
+      title: "atmosphere",
+      subtitle: "clear sky • low humidity",
+      value: "72° fahrenheit",
+      detail: "h: 76° • l: 58° • zero precipitation",
+    },
+  },
+  {
+    label: "stoic quote",
+    scheme: "mobilenotes://",
+    category: "mindfulness",
+    description: "Daily Stoic Affirmation",
+    defaultWidget: {
+      type: "quote",
+      title: "daily contemplation",
+      subtitle: "marcus aurelius",
+      value: "you have power over your mind - not outside events.",
+      detail: "realize this, and you will find strength.",
+    },
+  },
+  {
     label: "camera",
     scheme: "camera:",
     category: "media",
@@ -143,6 +171,45 @@ export const PRESET_LIBRARY: PresetScheme[] = [
     },
   },
   {
+    label: "reminders",
+    scheme: "x-apple-reminderkit://",
+    category: "productivity",
+    description: "Apple Reminders & Tasks",
+    defaultWidget: {
+      type: "scratchpad",
+      title: "priority tasks",
+      subtitle: "due today",
+      value: "complete code review • 30min mindful walk",
+      detail: "x-apple-reminderkit://",
+    },
+  },
+  {
+    label: "mail",
+    scheme: "message://",
+    category: "communication",
+    description: "Apple Mail Dispatch",
+    defaultWidget: {
+      type: "sms_quick",
+      title: "inbox status",
+      subtitle: "zero unread alerts",
+      value: "inbox zero achieved",
+      detail: "message://",
+    },
+  },
+  {
+    label: "shortcuts",
+    scheme: "shortcuts://",
+    category: "system",
+    description: "Apple Shortcuts Automation",
+    defaultWidget: {
+      type: "telemetry",
+      title: "automations",
+      subtitle: "siri shortcuts hub",
+      value: "tap to execute routines",
+      detail: "shortcuts://",
+    },
+  },
+  {
     label: "slack",
     scheme: "slack://",
     category: "communication",
@@ -153,6 +220,45 @@ export const PRESET_LIBRARY: PresetScheme[] = [
       subtitle: "unread priority pings",
       value: "#engineering: deployment ready",
       detail: "slack://",
+    },
+  },
+  {
+    label: "chatgpt",
+    scheme: "chatgpt://",
+    category: "productivity",
+    description: "ChatGPT AI Assistant",
+    defaultWidget: {
+      type: "scratchpad",
+      title: "ai scratchpad",
+      subtitle: "ready for prompts",
+      value: "ask a thoughtful, focused question",
+      detail: "chatgpt://",
+    },
+  },
+  {
+    label: "podcasts",
+    scheme: "pcast://",
+    category: "audio",
+    description: "Apple Podcasts",
+    defaultWidget: {
+      type: "now_playing",
+      title: "audio stream",
+      subtitle: "latest episode queue",
+      value: "the daily • deep tech focus",
+      detail: "pcast://",
+    },
+  },
+  {
+    label: "kindle",
+    scheme: "kindle://",
+    category: "reading",
+    description: "Kindle eBook Reader",
+    defaultWidget: {
+      type: "quote",
+      title: "reading goal",
+      subtitle: "current bookmark",
+      value: "reading replaces shallow dopamine with deep thought.",
+      detail: "kindle://",
     },
   },
   {

@@ -1,5 +1,7 @@
 export type WidgetType =
   | "clock"
+  | "weather"
+  | "quote"
   | "scratchpad"
   | "contact"
   | "sms_quick"
@@ -11,6 +13,8 @@ export type WidgetType =
 export type FocusMode = "essential" | "focus" | "personal" | "all";
 
 export type TextAlignment = "left" | "center" | "right";
+
+export type AppFontSize = "compact" | "normal" | "large";
 
 export interface AppWidgetItem {
   id: string;
@@ -47,6 +51,8 @@ export interface PresetScheme {
 export interface DumbPhoneSettings {
   activeMode: FocusMode;
   textAlignment: TextAlignment;
+  fontSize: AppFontSize;
+  oledMode: boolean; // True OLED Pitch-Black vs Starfield Space Wallpaper
   globalMindfulDelay: boolean;
   mindfulDelaySeconds: number;
   dailyOpensCount: number;

@@ -6,6 +6,7 @@ import {
   WidgetType,
   FocusMode,
   TextAlignment,
+  AppFontSize,
   DumbPhoneSettings,
 } from "@/types/launcher";
 import { DEFAULT_APPS, DEFAULT_DUMBPHONE_SETTINGS } from "@/lib/defaultConfig";
@@ -30,6 +31,8 @@ interface LauncherContextType {
   settings: DumbPhoneSettings;
   setFocusMode: (mode: FocusMode) => void;
   setTextAlignment: (align: TextAlignment) => void;
+  setFontSize: (size: AppFontSize) => void;
+  toggleOledMode: () => void;
   updateSettings: (newSettings: Partial<DumbPhoneSettings>) => void;
   recordAppOpen: () => void;
   pendingMindfulApp: AppWidgetItem | null;
@@ -39,9 +42,9 @@ interface LauncherContextType {
   mounted: boolean;
 }
 
-const STORAGE_KEY = "ios_launcher_apps_v4";
-const SETTINGS_KEY = "ios_launcher_settings_v4";
-const ACTIVE_WIDGET_KEY = "ios_launcher_active_widget_v4";
+const STORAGE_KEY = "ios_launcher_apps_v5";
+const SETTINGS_KEY = "ios_launcher_settings_v5";
+const ACTIVE_WIDGET_KEY = "ios_launcher_active_widget_v5";
 
 const LauncherContext = createContext<LauncherContextType | undefined>(undefined);
 
@@ -57,14 +60,14 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
   // Load from localStorage on client mount with schema sanitization
   useEffect(() => {
     try {
-      const savedApps = localStorage.getItem(STORAGE_KEY);
+      // Check v5 first, fallback to v4
+      const savedApps = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("ios_launcher_apps_v4");
       if (savedApps) {
         const parsed = JSON.parse(savedApps);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Backward-compatible sanitization for all apps
           const sanitized = parsed.map((app: Partial<AppWidgetItem>) => ({
             id: app.id || `app_${Date.now()}`,
-            label: (app.label || "app").toLowerCase(),
+            label: (app.label || "app").toLowerCase().trim(),
             scheme: app.scheme || "tel:",
             description: app.description || "Application",
             category: app.category || "custom",
@@ -86,12 +89,14 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const savedSettings = localStorage.getItem(SETTINGS_KEY);
+      const savedSettings = localStorage.getItem(SETTINGS_KEY) || localStorage.getItem("ios_launcher_settings_v4");
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings);
         setSettings((prev) => ({
           ...prev,
           ...parsedSettings,
+          fontSize: parsedSettings.fontSize || "normal",
+          oledMode: Boolean(parsedSettings.oledMode),
           dailyOpensCount:
             parsedSettings.lastOpensDate === new Date().toISOString().split("T")[0]
               ? parsedSettings.dailyOpensCount || 0
@@ -99,7 +104,7 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
         }));
       }
 
-      const savedWidgetId = localStorage.getItem(ACTIVE_WIDGET_KEY);
+      const savedWidgetId = localStorage.getItem(ACTIVE_WIDGET_KEY) || localStorage.getItem("ios_launcher_active_widget_v4");
       if (savedWidgetId) {
         setActiveWidgetId(savedWidgetId);
       }
@@ -188,9 +193,7 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
     setSettings(DEFAULT_DUMBPHONE_SETTINGS);
     setActiveWidgetId("clock");
     try {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(SETTINGS_KEY);
-      localStorage.removeItem(ACTIVE_WIDGET_KEY);
+      localStorage.clear();
     } catch {}
   };
 
@@ -200,6 +203,14 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
 
   const setTextAlignment = (align: TextAlignment) => {
     setSettings((prev) => ({ ...prev, textAlignment: align }));
+  };
+
+  const setFontSize = (size: AppFontSize) => {
+    setSettings((prev) => ({ ...prev, fontSize: size }));
+  };
+
+  const toggleOledMode = () => {
+    setSettings((prev) => ({ ...prev, oledMode: !prev.oledMode }));
   };
 
   const updateSettings = (newSettings: Partial<DumbPhoneSettings>) => {
@@ -236,6 +247,8 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
         settings,
         setFocusMode,
         setTextAlignment,
+        setFontSize,
+        toggleOledMode,
         updateSettings,
         recordAppOpen,
         pendingMindfulApp,

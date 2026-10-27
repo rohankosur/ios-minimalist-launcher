@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { useLauncher } from "@/context/LauncherContext";
 import { PRESET_LIBRARY } from "@/lib/defaultConfig";
-import { WidgetType, PresetScheme, FocusMode, TextAlignment } from "@/types/launcher";
+import { WidgetType, PresetScheme, FocusMode, TextAlignment, AppFontSize } from "@/types/launcher";
 
 const WIDGET_TYPES: { type: WidgetType; label: string; desc: string }[] = [
   { type: "clock", label: "system clock", desc: "Digital typography & battery telemetry" },
+  { type: "weather", label: "weather conditions", desc: "Live temperature & atmospheric condition" },
+  { type: "quote", label: "stoic quote", desc: "Daily contemplation & mindful thought" },
   { type: "scratchpad", label: "quick scratchpad", desc: "Live editable memo with auto-persistence" },
   { type: "contact", label: "speed contact", desc: "One-tap direct dial for favorite contact" },
   { type: "sms_quick", label: "quick message", desc: "One-tap pre-filled SMS dispatch" },
@@ -32,6 +34,8 @@ export default function CustomizeModal() {
     setActiveWidgetId,
     settings,
     setTextAlignment,
+    setFontSize,
+    toggleOledMode,
     updateSettings,
   } = useLauncher();
 
@@ -101,10 +105,14 @@ export default function CustomizeModal() {
 
   const toggleModeForApp = (mode: FocusMode) => {
     if (!selectedApp) return;
-    const current = selectedApp.modes || ["all"];
-    const updated = current.includes(mode)
-      ? current.filter((m) => m !== mode)
-      : [...current, mode];
+    const currentModes = selectedApp.modes || ["all"];
+    let updated: FocusMode[];
+    if (currentModes.includes(mode)) {
+      if (currentModes.length <= 1) return;
+      updated = currentModes.filter((m) => m !== mode);
+    } else {
+      updated = [...currentModes, mode];
+    }
     updateApp(selectedApp.id, { modes: updated });
   };
 
@@ -112,17 +120,18 @@ export default function CustomizeModal() {
     <div
       role="dialog"
       aria-modal="true"
+      aria-label="Customize Launcher and Widgets"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
       onClick={() => setIsCustomizing(false)}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200 select-none cursor-pointer"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg max-h-[90vh] rounded-t-[36px] sm:rounded-[36px] flex flex-col overflow-hidden text-white shadow-2xl cursor-default"
+        className="w-full max-w-lg max-h-[90vh] rounded-t-[32px] sm:rounded-[36px] flex flex-col overflow-hidden text-white shadow-2xl cursor-default"
         style={{
-          backgroundColor: "rgba(5, 15, 45, 0.94)",
+          backgroundColor: settings.oledMode ? "rgba(10, 10, 10, 0.96)" : "rgba(5, 15, 45, 0.95)",
           backdropFilter: "blur(30px)",
           WebkitBackdropFilter: "blur(30px)",
-          border: "none",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
         }}
       >
         {/* Modal Header */}
@@ -132,7 +141,7 @@ export default function CustomizeModal() {
               customize dumb phone
             </h2>
             <p className="text-xs text-white/50 lowercase">
-              behavioral friction • focus modes • widgets
+              typography • behavioral friction • widgets
             </p>
           </div>
           <button
@@ -145,15 +154,15 @@ export default function CustomizeModal() {
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-5">
+        <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4">
           {/* Global Dumb Phone Settings Card */}
           <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex flex-col gap-3">
             <span className="text-xs uppercase tracking-wider font-semibold text-white/40">
-              ergonomics &amp; behavioral friction
+              ergonomics &amp; appearance
             </span>
 
             <div className="grid grid-cols-2 gap-3">
-              {/* Text Alignment (from Olauncher) */}
+              {/* Text Alignment */}
               <div>
                 <label className="text-[11px] text-white/50 block mb-1 lowercase">
                   text alignment
@@ -176,7 +185,51 @@ export default function CustomizeModal() {
                 </div>
               </div>
 
-              {/* Global Mindful Pause (from Minimalist Phone / Blank Spaces) */}
+              {/* Typography Scale */}
+              <div>
+                <label className="text-[11px] text-white/50 block mb-1 lowercase">
+                  launcher text size
+                </label>
+                <div className="flex gap-1">
+                  {(["compact", "normal", "large"] as AppFontSize[]).map((sz) => (
+                    <button
+                      key={sz}
+                      type="button"
+                      onClick={() => setFontSize(sz)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-mono lowercase transition-all ${
+                        settings.fontSize === sz
+                          ? "bg-white text-[#050f2d] font-bold"
+                          : "bg-white/10 text-white/60 hover:text-white"
+                      }`}
+                    >
+                      {sz}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* OLED Mode & Global Mindful Pause Row */}
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+              {/* OLED Black Mode Toggle */}
+              <div>
+                <label className="text-[11px] text-white/50 block mb-1 lowercase">
+                  visual theme
+                </label>
+                <button
+                  type="button"
+                  onClick={toggleOledMode}
+                  className={`w-full py-1.5 px-2 rounded-lg text-xs font-mono lowercase transition-all ${
+                    settings.oledMode
+                      ? "bg-amber-400/20 text-amber-300 border border-amber-400/40 font-bold"
+                      : "bg-white/10 text-white/60 hover:text-white"
+                  }`}
+                >
+                  {settings.oledMode ? "pure black oled" : "cosmic starfield"}
+                </button>
+              </div>
+
+              {/* Global Mindful Pause */}
               <div>
                 <label className="text-[11px] text-white/50 block mb-1 lowercase">
                   mindful pause
