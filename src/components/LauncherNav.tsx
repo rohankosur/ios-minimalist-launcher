@@ -21,6 +21,7 @@ export default function LauncherNav() {
     setPendingMindfulApp,
     recordAppOpen,
     setIsSearchOpen,
+    setIsAppDirectoryOpen,
     toggleOledMode,
   } = useLauncher();
 
@@ -150,6 +151,15 @@ export default function LauncherNav() {
               {settings.oledMode ? "✦" : "☾"}
             </button>
 
+            {/* Searchable App Directory Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsAppDirectoryOpen(true)}
+              className="text-[11px] font-mono text-emerald-300 hover:text-white lowercase flex items-center gap-1 bg-emerald-400/20 hover:bg-emerald-400/30 px-2 py-0.5 rounded-full transition-all font-semibold"
+            >
+              <span>+ apps</span>
+            </button>
+
             {/* A-Z Search Drawer Button */}
             <button
               type="button"
@@ -217,7 +227,15 @@ export default function LauncherNav() {
 
         {/* Minimalist bottom utility bar */}
         <div className="mt-3 pt-2.5 flex items-center justify-between text-xs text-white/40 border-t border-white/5">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsAppDirectoryOpen(true)}
+              className="flex items-center gap-1 text-emerald-300 hover:text-white active:scale-95 transition-all lowercase font-semibold bg-emerald-400/20 hover:bg-emerald-400/30 px-2.5 py-1 rounded-full text-[11px]"
+            >
+              <span>+ add app</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setIsCustomizing(true)}

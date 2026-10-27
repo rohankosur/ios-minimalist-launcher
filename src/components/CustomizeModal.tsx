@@ -38,6 +38,7 @@ export default function CustomizeModal() {
     toggleOledMode,
     updateSettings,
     setIsWidgetModalOpen,
+    setIsAppDirectoryOpen,
   } = useLauncher();
 
   const [selectedAppId, setSelectedAppId] = useState<string>(apps[0]?.id || "");
@@ -282,13 +283,25 @@ export default function CustomizeModal() {
               <span className="text-xs uppercase tracking-wider font-semibold text-white/40">
                 select app to configure
               </span>
-              <button
-                type="button"
-                onClick={() => setShowAddDrawer(true)}
-                className="text-xs font-mono text-emerald-400 hover:text-emerald-300 lowercase"
-              >
-                + add new app
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomizing(false);
+                    setIsAppDirectoryOpen(true);
+                  }}
+                  className="text-xs font-mono text-emerald-400 hover:text-emerald-300 font-bold lowercase bg-emerald-400/10 px-2 py-0.5 rounded-full"
+                >
+                  + browse 60+ apps ➔
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddDrawer(true)}
+                  className="text-xs font-mono text-white/50 hover:text-white lowercase"
+                >
+                  custom app
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
               {apps.map((app, idx) => (

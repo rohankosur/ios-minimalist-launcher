@@ -42,6 +42,8 @@ interface LauncherContextType {
   cycleWidget: (direction: "prev" | "next") => void;
   isWidgetModalOpen: boolean;
   setIsWidgetModalOpen: (val: boolean) => void;
+  isAppDirectoryOpen: boolean;
+  setIsAppDirectoryOpen: (val: boolean) => void;
 
   // Dumbphone Behavioral Engineering Features
   settings: DumbPhoneSettings;
@@ -72,6 +74,7 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
   const [activeWidgetIndex, setActiveWidgetIndex] = useState<number>(0);
   const [isCustomizing, setIsCustomizing] = useState<boolean>(false);
   const [isWidgetModalOpen, setIsWidgetModalOpen] = useState<boolean>(false);
+  const [isAppDirectoryOpen, setIsAppDirectoryOpen] = useState<boolean>(false);
   const [settings, setSettings] = useState<DumbPhoneSettings>(DEFAULT_DUMBPHONE_SETTINGS);
   const [pendingMindfulApp, setPendingMindfulApp] = useState<AppWidgetItem | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
@@ -332,6 +335,8 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
         cycleWidget,
         isWidgetModalOpen,
         setIsWidgetModalOpen,
+        isAppDirectoryOpen,
+        setIsAppDirectoryOpen,
         settings,
         setFocusMode,
         setTextAlignment,

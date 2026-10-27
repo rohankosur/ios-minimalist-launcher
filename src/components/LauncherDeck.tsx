@@ -8,6 +8,7 @@ import CustomizeModal from "@/components/CustomizeModal";
 import MindfulDelayModal from "@/components/MindfulDelayModal";
 import AppSearchDrawer from "@/components/AppSearchDrawer";
 import WidgetModal from "@/components/WidgetModal";
+import AppDirectoryModal from "@/components/AppDirectoryModal";
 import { useLauncher } from "@/context/LauncherContext";
 
 export default function LauncherDeck() {
@@ -48,6 +49,9 @@ export default function LauncherDeck() {
           <LauncherNav />
         </div>
       </div>
+
+      {/* Searchable iOS App Directory & 1-Tap Manager */}
+      <AppDirectoryModal />
 
       {/* Widget Studio & Management Modal */}
       <WidgetModal />
