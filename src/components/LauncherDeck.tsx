@@ -12,7 +12,7 @@ import AppDirectoryModal from "@/components/AppDirectoryModal";
 import { useLauncher } from "@/context/LauncherContext";
 
 export default function LauncherDeck() {
-  const { settings } = useLauncher();
+  const { settings, toastMessage } = useLauncher();
 
   return (
     <main
@@ -49,6 +49,16 @@ export default function LauncherDeck() {
           <LauncherNav />
         </div>
       </div>
+
+      {/* Floating Minimalist Kinetic Toast HUD */}
+      {toastMessage && (
+        <div className="fixed top-5 z-50 pointer-events-none flex justify-center w-full px-4 animate-in fade-in slide-in-from-top-3 duration-200">
+          <div className="px-4 py-1.5 rounded-full bg-[#050f2d]/90 border border-white/20 backdrop-blur-xl shadow-2xl flex items-center gap-2 text-xs font-mono text-white/95">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>{toastMessage}</span>
+          </div>
+        </div>
+      )}
 
       {/* Searchable iOS App Directory & 1-Tap Manager */}
       <AppDirectoryModal />

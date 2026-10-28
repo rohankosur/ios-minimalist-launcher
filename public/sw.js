@@ -1,4 +1,4 @@
-const CACHE_NAME = "ios-launcher-v7";
+const CACHE_NAME = "ios-launcher-v8";
 
 // Pre-cache core offline shell assets
 self.addEventListener("install", (event) => {

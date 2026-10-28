@@ -53,6 +53,7 @@ export interface WidgetConfig {
   condition?: string;
   location?: string;
   unit?: "F" | "C";
+  weatherView?: "current" | "hourly" | "details";
   // Quote
   quoteText?: string;
   quoteAuthor?: string;
@@ -69,10 +70,16 @@ export interface WidgetConfig {
   targetDate?: string;
   targetEvent?: string;
   // Now Playing
-  ambientPreset?: "deep_space" | "cosmic_rain" | "zen_waves";
+  ambientPreset?: "deep_space" | "cosmic_rain" | "zen_waves" | "harmonic_432" | "miracle_528";
+  ambientFrequency?: number;
   // Telemetry
   showBattery?: boolean;
   showOpens?: boolean;
+  // Clock options
+  timeFormat?: "12h" | "24h";
+  showSeconds?: boolean;
+  // Agenda
+  agendaItems?: Array<{ id: string; time: string; title: string }>;
 }
 
 export interface WidgetInstance {

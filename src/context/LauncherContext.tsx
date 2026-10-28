@@ -58,6 +58,8 @@ interface LauncherContextType {
   setPendingMindfulApp: (app: AppWidgetItem | null) => void;
   isSearchOpen: boolean;
   setIsSearchOpen: (val: boolean) => void;
+  toastMessage: string | null;
+  showToast: (msg: string) => void;
   mounted: boolean;
 }
 
@@ -78,7 +80,21 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<DumbPhoneSettings>(DEFAULT_DUMBPHONE_SETTINGS);
   const [pendingMindfulApp, setPendingMindfulApp] = useState<AppWidgetItem | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [mounted, setMounted] = useState<boolean>(false);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    // Tactile haptic feedback
+    if (typeof window !== "undefined" && "vibrate" in navigator) {
+      try {
+        navigator.vibrate(12);
+      } catch {}
+    }
+    setTimeout(() => {
+      setToastMessage((cur) => (cur === msg ? null : cur));
+    }, 2800);
+  };
 
   // Load from localStorage on client mount with schema sanitization
   useEffect(() => {
@@ -349,6 +365,8 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
         setPendingMindfulApp,
         isSearchOpen,
         setIsSearchOpen,
+        toastMessage,
+        showToast,
         mounted,
       }}
     >

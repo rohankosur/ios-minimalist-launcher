@@ -11,6 +11,8 @@ import HabitsWidget from "./HabitsWidget";
 import NowPlayingWidget from "./NowPlayingWidget";
 import TelemetryWidget from "./TelemetryWidget";
 import CountdownWidget from "./CountdownWidget";
+import AgendaWidget from "./AgendaWidget";
+import ContactWidget from "./ContactWidget";
 
 interface WidgetRendererProps {
   widget: WidgetInstance;
@@ -36,6 +38,10 @@ export default function WidgetRenderer({ widget }: WidgetRendererProps) {
       return <TelemetryWidget widget={widget} />;
     case "countdown":
       return <CountdownWidget widget={widget} />;
+    case "agenda":
+      return <AgendaWidget widget={widget} />;
+    case "contact":
+      return <ContactWidget widget={widget} />;
     default:
       return <ClockWidget widget={widget} />;
   }
