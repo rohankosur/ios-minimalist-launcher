@@ -242,8 +242,12 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
       order: widgets.length,
       config: catalogItem ? { ...catalogItem.defaultConfig } : {},
     };
-    setWidgets((prev) => [...prev, newWidget]);
-    setActiveWidgetIndex(widgets.length);
+    setWidgets((prev) => {
+      const updated = [...prev, newWidget];
+      setActiveWidgetIndex(updated.length - 1);
+      return updated;
+    });
+    showToast(`added ${newWidget.title} to top deck ✓`);
   };
 
   const updateWidget = (id: string, updated: Partial<WidgetInstance>) => {
